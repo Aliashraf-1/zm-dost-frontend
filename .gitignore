@@ -30,25 +30,23 @@ build/
 
 # ============ BACKEND SPECIFIC ============
 
-# MongoDB data (local database)
-data/
-db/
+# ❌ REMOVED: data/ (ye aapka frontend data folder hai — MISSING THA! Isliye build fail hua tha)
+# ✅ MongoDB data (agar koi local MongoDB data folder hai to uska specific naam use karo)
 mongodb-data/
 
 # Backend build files
-BackEnd/dist/
-BackEnd/build/
+Backend/dist/
+Backend/build/
 
 # Backend environment
-BackEnd/.env
-BackEnd/.env.local
-BackEnd/.env.production
+Backend/.env
+Backend/.env.local
+Backend/.env.production
 
-# Uploads / User files
-uploads/
-images/
-temp/
-public/uploads/
+# Uploads / User files (Backend ka uploads folder — ye git pe nahi chahiye)
+Backend/uploads/
+Backend/images/
+Backend/temp/
 
 # Session files
 sessions/
@@ -56,7 +54,7 @@ sessions/
 
 # Package lock files (optional - kuch log rakhte hain, kuch nahi)
 # package-lock.json
-# BackEnd/package-lock.json
+# Backend/package-lock.json
 
 # Testing coverage
 coverage/
@@ -67,5 +65,5 @@ coverage/
 *.seed
 *.pid.lock
 
-
+# ✅ Backend folder (alag repository mein hai isliye frontend repo se ignore)
 Backend/
