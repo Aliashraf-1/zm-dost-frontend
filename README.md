@@ -35,6 +35,79 @@ The application was developed based on real-world requirements and is currently 
 
 ---
 
+## 🖥️ Application Preview
+
+<table>
+<tr>
+<td width="50%">
+
+### 📊 Dashboard
+
+<img src="./public/screenshots/dashboard.png" width="100%">
+
+</td>
+<td width="50%">
+
+### 🏢 Buildings
+
+<img src="./public/screenshots/buildings.png" width="100%">
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### 🏠 Units
+
+<img src="./public/screenshots/units.png" width="100%">
+
+</td>
+<td width="50%">
+
+### 👥 Customers
+
+<img src="./public/screenshots/customers.png" width="100%">
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### 💰 Revenue
+
+<img src="./public/screenshots/revenue.png" width="100%">
+
+</td>
+<td width="50%">
+
+### 💵 Salary Management
+
+<img src="./public/screenshots/paysalary.png" width="100%">
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### 📈 Reports & Analytics
+
+<img src="./public/screenshots/reports.png" width="100%">
+
+</td>
+<td width="50%">
+
+### 🔐 Login
+
+<img src="./public/screenshots/login.png" width="100%">
+
+</td>
+</tr>
+</table>
+
+
 ## 🛠️ Technology Stack
 
 ### Frontend
