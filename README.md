@@ -84,6 +84,16 @@ zm-dost-frontend/
 └── README.md
 ```
 
+
+## 🌐 Live Application
+
+🚀 **Live Website:** https://zmdost.com
+
+The ZM Dost Building Management System is deployed and currently being used by a real-world client.
+
+The public repository contains the application's source code, while production credentials, private business data, and sensitive configuration are kept secure.
+
+
 ---
 
 ## 🔗 Related Repository
