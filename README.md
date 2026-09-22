@@ -1,36 +1,193 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏢 ZM Dost — Building Management System
 
-## Getting Started
+A modern **Building Management System** built to manage properties, customers, employees, rooms, agreements, revenue, reports, and day-to-day building operations through a centralized web application.
 
-First, run the development server:
+This frontend is the **Next.js client application** of the ZM Dost Building Management System.
+
+> 🚀 **This project was developed and deployed for real-world client use.**
+
+---
+
+## ✨ Overview
+
+ZM Dost is a full-stack business management application designed to simplify building and property-related operations.
+
+The system provides a centralized dashboard where authorized users can manage operational data and monitor important business information.
+
+The application was developed based on real-world requirements and is currently being used by a client.
+
+---
+
+## 🚀 Key Features
+
+* 🏢 Building & Property Management
+* 🏠 Room / Unit Management
+* 👥 Customer Management
+* 👨‍💼 Employee Management
+* 📄 Agreement & Record Management
+* 💰 Revenue Management
+* 📊 Reports & Analytics
+* 📈 Dashboard & Business Statistics
+* 🔐 Authentication & Protected Routes
+* 🔄 API-based Data Management
+* 📱 Responsive User Interface
+* ⚡ Modern Next.js Application Architecture
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+* **Next.js**
+* **React.js**
+* **JavaScript / JSX**
+* **Tailwind CSS**
+
+### State & Application Architecture
+
+* React Context
+* Reusable Components
+* Client & Server Components
+* Modular Application Structure
+
+### Backend Communication
+
+* REST APIs
+* HTTP-based API communication
+* Authentication & protected requests
+
+### Development Tools
+
+* Git
+* GitHub
+* npm
+
+---
+
+## 📁 Project Structure
+
+```text
+zm-dost-frontend/
+│
+├── app/            # Next.js application routes & pages
+├── components/     # Reusable UI components
+├── constants/      # Application constants
+├── context/        # React context & application state
+├── data/           # Application data/configuration
+├── lib/             # Utility functions & helpers
+├── public/          # Static assets
+│
+├── package.json
+├── next.config.js
+├── eslint.config.mjs
+└── README.md
+```
+
+---
+
+## 🔗 Related Repository
+
+The backend API is maintained separately:
+
+### 🔧 Backend
+
+**ZM Dost Backend**
+
+https://github.com/Aliashraf-1/zm-dost-backend
+
+The frontend communicates with the backend through APIs to retrieve and manage application data.
+
+---
+
+## 🔐 Security & Privacy
+
+This application contains **client-specific business logic and data**.
+
+For security and privacy reasons:
+
+* Production credentials are not included.
+* Environment variables are kept outside the repository.
+* Client-specific sensitive information is not publicly documented.
+* Production data is not included in this repository.
+
+---
+
+## ⚙️ Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Aliashraf-1/zm-dost-frontend.git
+```
+
+### 2. Navigate to the project
+
+```bash
+cd zm-dost-frontend
+```
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Configure environment variables
+
+Create a `.env.local` file and add the required environment variables.
+
+```env
+# Add your API configuration here
+```
+
+> Do not commit `.env.local` or production credentials to GitHub.
+
+### 5. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🌐 Deployment
 
-To learn more about Next.js, take a look at the following resources:
+The application has been **deployed for real-world client use**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Production configuration, credentials, and private deployment details are intentionally not included in this public repository.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📌 Project Status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Production — Client in Use**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is not only a learning/demo project; it was developed to address actual business requirements and deployed for client usage.
+
+---
+
+## 👨‍💻 Developer
+
+### Ali Ashraf
+
+**Full-Stack Web Developer**
+
+* MERN Stack
+* Next.js
+* Laravel & PHP
+* MySQL
+* MongoDB
+* Tailwind CSS
+
+🎓 BS Information Technology — University of Sargodha
+
+---
+
+⭐ If you find this project interesting, consider giving the repository a star.
