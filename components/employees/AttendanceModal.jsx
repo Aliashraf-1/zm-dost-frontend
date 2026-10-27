@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Clock, CheckCircle2, AlertCircle, Edit2 } from "lucide-react";
 import ModalPortal from "@/components/common/ModalPortal";
 
-export default function AttendanceModal({ employee, onClose, onSave }) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [status, setStatus] = useState("Present");
-  const [checkIn, setCheckIn] = useState("09:00");
-  const [checkOut, setCheckOut] = useState("17:00");
-  const [lateMinutes, setLateMinutes] = useState(0);
+export default function AttendanceModal({ employee, initialData = null, onClose, onSave }) {
+  const isEditing = Boolean(initialData);
+  const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
+  const [status, setStatus] = useState(initialData?.status || "Present");
+  const [checkIn, setCheckIn] = useState(initialData?.checkIn || (initialData?.status === "Present" ? "09:00" : "09:00"));
+  const [checkOut, setCheckOut] = useState(initialData?.checkOut || (initialData?.status === "Present" ? "17:00" : "17:00"));
+  const [lateMinutes, setLateMinutes] = useState(initialData?.lateMinutes ?? 0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(""); // ✅ Error state
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -28,7 +29,7 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(""); // ✅ Clear previous error
+    setError("");
 
     try {
       const employeeId = employee._id || employee.id;
@@ -41,12 +42,12 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
         lateMinutes: status === "Present" ? Number(lateMinutes) : 0,
       };
 
-      await onSave(employeeId, attendanceData);
+      const recordId = initialData?._id || initialData?.date;
+      await onSave(employeeId, attendanceData, recordId);
       onClose();
-    } catch (error) {
-      console.error("Failed to save attendance:", error);
-      // ✅ Inline error message set karo
-      setError(error.response?.data?.message || "Failed to save attendance. Please try again.");
+    } catch (err) {
+      console.error("Failed to save attendance:", err);
+      setError(err.response?.data?.message || err.message || "Failed to save attendance. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -63,10 +64,10 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400">
-                <Clock size={20} />
+                {isEditing ? <Edit2 size={20} /> : <Clock size={20} />}
               </div>
               <div>
-                <h2 className="font-semibold">Mark Attendance</h2>
+                <h2 className="font-semibold">{isEditing ? "Edit Attendance" : "Mark Attendance"}</h2>
                 <p className="text-xs text-muted-foreground">{employee?.name}</p>
               </div>
             </div>
@@ -97,10 +98,11 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
               <select
                 value={status}
                 onChange={(e) => {
-                  setStatus(e.target.value);
-                  if (e.target.value === "Present") {
-                    setCheckIn("09:00");
-                    setCheckOut("17:00");
+                  const newStatus = e.target.value;
+                  setStatus(newStatus);
+                  if (newStatus === "Present") {
+                    setCheckIn(checkIn || "09:00");
+                    setCheckOut(checkOut || "17:00");
                   } else {
                     setCheckIn("");
                     setCheckOut("");
@@ -112,6 +114,7 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
                 <option value="Present">Present</option>
                 <option value="Absent">Absent</option>
                 <option value="Leave">Leave</option>
+                <option value="Friday Off">Friday Off</option>
               </select>
             </div>
 
@@ -156,7 +159,7 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
               </div>
             )}
 
-            {/* ✅ Inline Error Display */}
+            {/* Inline Error Display */}
             {error && (
               <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
@@ -178,7 +181,7 @@ export default function AttendanceModal({ employee, onClose, onSave }) {
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
               >
                 <CheckCircle2 size={17} />
-                {loading ? "Saving..." : "Save Attendance"}
+                {loading ? (isEditing ? "Updating..." : "Saving...") : (isEditing ? "Update Attendance" : "Save Attendance")}
               </button>
             </div>
           </form>

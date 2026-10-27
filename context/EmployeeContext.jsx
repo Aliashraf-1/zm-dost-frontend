@@ -142,6 +142,21 @@ const markAttendance = async (employeeId, attendanceData) => {
   }
 };
 
+  // ✅ Update attendance
+  const updateAttendance = async (employeeId, attendanceId, attendanceData) => {
+    try {
+      const response = await employeeAPI.updateAttendance(employeeId, attendanceId, attendanceData);
+      const updatedEmployee = response.data.data;
+      setEmployees((prev) =>
+        prev.map((e) => (e._id === employeeId || e.id === employeeId ? updatedEmployee : e))
+      );
+      return updatedEmployee;
+    } catch (error) {
+      console.error("Failed to update attendance:", error);
+      throw error;
+    }
+  };
+
   // ✅ Add task
   const addTask = async (employeeId, taskData) => {
     try {
@@ -240,6 +255,7 @@ const markAttendance = async (employeeId, attendanceData) => {
       deleteEmployee,
       getEmployeeById,
       markAttendance,
+      updateAttendance,
       addTask,
       updateTask,
       paySalary,

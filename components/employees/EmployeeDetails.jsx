@@ -49,11 +49,12 @@ function InfoItem({ icon: Icon, label, value }) {
   );
 }
 
-export default function EmployeeDetails({ employee, onPaySalary, onDelete, onAttendanceUpdate, onTaskAdd, onTaskUpdate }) {
+export default function EmployeeDetails({ employee, onPaySalary, onDelete, onAttendanceUpdate, onAttendanceEdit, onTaskAdd, onTaskUpdate }) {
   const router = useRouter();
   const [showPayModal, setShowPayModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState(null);
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -158,6 +159,18 @@ export default function EmployeeDetails({ employee, onPaySalary, onDelete, onAtt
     } catch (error) {
       console.error("Attendance save failed:", error);
       alert("Failed to save attendance. Please try again.");
+    }
+  };
+
+  const handleAttendanceEditSave = async (empId, attendanceData, attendanceId) => {
+    try {
+      if (onAttendanceEdit) {
+        await onAttendanceEdit(empId, attendanceId, attendanceData);
+      }
+      setEditingAttendance(null);
+    } catch (error) {
+      console.error("Attendance edit failed:", error);
+      throw error;
     }
   };
 
@@ -430,7 +443,11 @@ export default function EmployeeDetails({ employee, onPaySalary, onDelete, onAtt
 
         {/* Attendance History */}
         <div className="mt-6">
-          <EmployeeAttendance attendance={employee.attendance || []} />
+          <EmployeeAttendance
+            attendance={employee.attendance || []}
+            canEdit={isAdmin}
+            onEditAttendance={(record) => setEditingAttendance(record)}
+          />
         </div>
 
         {/* Salary History */}
@@ -467,6 +484,16 @@ export default function EmployeeDetails({ employee, onPaySalary, onDelete, onAtt
           employee={employee}
           onClose={() => setShowAttendanceModal(false)}
           onSave={handleAttendanceSave}
+        />
+      )}
+
+      {/* Edit Attendance Modal */}
+      {editingAttendance && (
+        <AttendanceModal
+          employee={employee}
+          initialData={editingAttendance}
+          onClose={() => setEditingAttendance(null)}
+          onSave={handleAttendanceEditSave}
         />
       )}
 

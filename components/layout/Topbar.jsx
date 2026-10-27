@@ -180,7 +180,7 @@ export default function Topbar({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+              <div className="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-12 z-50 w-[90vw] max-w-sm sm:w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
                 <div className="border-b border-border px-4 py-3">
                   <p className="text-sm font-semibold">Notifications</p>
                   <p className="text-xs text-muted-foreground">{notifications.length} items</p>

@@ -5,6 +5,7 @@ import { useUsers } from "@/context/UserContext";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import AddUserModal from "@/components/users/AddUserModal";
+import EditUserModal from "@/components/users/EditUserModal";
 import {
   Users,
   UserPlus,
@@ -18,10 +19,11 @@ import {
 } from "lucide-react";
 
 export default function UsersPage() {
-  const { users, deleteUser, updateUser, addUser } = useUsers();
+  const { users, setUsers, deleteUser, addUser } = useUsers();
   const { user: currentUser } = useAuth();
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
 
   const filteredUsers = users.filter(
     (u) =>
@@ -152,6 +154,7 @@ export default function UsersPage() {
                           {!isCurrentUser && (
                             <>
                               <button
+                                onClick={() => setEditingUser(user)}
                                 className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                                 title="Edit"
                               >
@@ -188,6 +191,19 @@ export default function UsersPage() {
         <AddUserModal
           onClose={() => setShowAddModal(false)}
           onSave={addUser}
+        />
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={(updatedUser) => {
+            setUsers((prev) =>
+              prev.map((u) => (u._id === updatedUser._id ? updatedUser : u))
+            );
+          }}
         />
       )}
     </ProtectedRoute>

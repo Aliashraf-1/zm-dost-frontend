@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Calendar, Wallet } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Calendar, Wallet, Edit2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
-export default function EmployeeAttendance({ attendance = [] }) {
+export default function EmployeeAttendance({ attendance = [], canEdit = false, onEditAttendance = null }) {
+  const { user } = useAuth();
+  const isAdmin = canEdit || user?.role === "admin" || user?.role === "super_admin";
   const [showAll, setShowAll] = useState(false);
 
   const getStatusBadge = (status) => {
@@ -213,6 +216,9 @@ export default function EmployeeAttendance({ attendance = [] }) {
                 <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Check Out</th>
                 <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Late (min)</th>
                 <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Deduction</th>
+                {isAdmin && (
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground text-right">Action</th>
+                )}
               </tr>
             </thead>
 
@@ -274,6 +280,17 @@ export default function EmployeeAttendance({ attendance = [] }) {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => onEditAttendance && onEditAttendance(record)}
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-indigo-400"
+                          title="Edit Attendance"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

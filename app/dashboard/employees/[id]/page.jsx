@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 export default function EmployeeDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const { employees, setEmployees, paySalary, deleteEmployee, markAttendance, addTask, updateTask } = useEmployees();
+  const { employees, setEmployees, paySalary, deleteEmployee, markAttendance, updateAttendance, addTask, updateTask } = useEmployees();
   const { user } = useAuth();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +57,17 @@ export default function EmployeeDetailsPage() {
     throw error;
   }
 };
+
+  const handleAttendanceEdit = async (employeeId, attendanceId, attendanceData) => {
+    try {
+      const updated = await updateAttendance(employeeId, attendanceId, attendanceData);
+      setEmployee(updated);
+      return updated;
+    } catch (error) {
+      console.error("Attendance edit failed:", error);
+      throw error;
+    }
+  };
 
   // ✅ Add this function
   const handleTaskAdd = async (taskData) => {
@@ -110,6 +121,7 @@ export default function EmployeeDetailsPage() {
       onPaySalary={handlePaySalary}
       onDelete={handleDelete}
       onAttendanceUpdate={handleAttendanceUpdate}
+      onAttendanceEdit={handleAttendanceEdit}
       onTaskAdd={handleTaskAdd}  // ✅ Pass this
       onTaskUpdate={handleTaskUpdate}
       />
