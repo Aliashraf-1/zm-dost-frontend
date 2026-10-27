@@ -117,7 +117,7 @@ export default function DashboardHeader() {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
             {/* Date */}
             <div className="hidden items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-sm text-muted-foreground md:flex">
               <Calendar size={15} />
@@ -152,7 +152,7 @@ export default function DashboardHeader() {
               {/* Dropdown Menu - Now not clipped */}
               {showDropdown && (
                 <div 
-                  className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-muted shadow-2xl overflow-hidden"
+                  className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2.5rem)] rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
                   style={{ zIndex: 9999 }}
                 >
                   <div className="p-2 space-y-1">

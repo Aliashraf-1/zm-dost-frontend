@@ -11,6 +11,9 @@ import {
   Plus,
   ReceiptText,
   Settings,
+  LogOut,
+  ChevronDown,
+  User,
 } from "lucide-react";
 import AddIncomeModal from "@/components/revenue/AddIncomeModal";
 import QuickExpenseModal from "@/components/revenue/QuickExpenseModal";
@@ -28,7 +31,7 @@ export default function Topbar({
 }) {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { buildings } = useBuildings();
   const { employees } = useEmployees();
   const { leads } = useLeads();
@@ -36,7 +39,9 @@ export default function Topbar({
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const notificationRef = useRef(null);
+  const profileRef = useRef(null);
   const { addIncome, addExpense } = useRevenue();
 
   const canUseFinance =
@@ -54,6 +59,9 @@ export default function Topbar({
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -141,18 +149,18 @@ export default function Topbar({
             <>
               <button
                 onClick={() => setShowIncomeModal(true)}
-                className="group hidden items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-600/20 transition-all duration-300 hover:scale-105 hover:bg-indigo-500 hover:shadow-indigo-600/40 active:scale-95 sm:flex"
+                className="group flex items-center gap-1.5 rounded-xl bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-indigo-600/20 transition-all duration-300 hover:scale-105 hover:bg-indigo-500 hover:shadow-indigo-600/40 active:scale-95 sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-sm"
               >
-                <Plus size={17} className="transition-transform duration-300 group-hover:rotate-90" />
-                Add Fund
+                <Plus size={16} className="shrink-0 transition-transform duration-300 group-hover:rotate-90" />
+                <span>Income</span>
               </button>
 
               <button
                 onClick={() => setShowExpenseModal(true)}
-                className="group hidden items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-300 hover:border-indigo-500/50 hover:bg-muted hover:text-foreground hover:shadow-lg active:scale-95 sm:flex"
+                className="group flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-300 hover:border-indigo-500/50 hover:bg-muted hover:text-foreground hover:shadow-lg active:scale-95 sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-sm"
               >
-                <ReceiptText size={17} className="transition-transform duration-300 group-hover:scale-110" />
-                Expense
+                <ReceiptText size={16} className="shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <span>Expense</span>
               </button>
             </>
           )}
@@ -172,7 +180,7 @@ export default function Topbar({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+              <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
                 <div className="border-b border-border px-4 py-3">
                   <p className="text-sm font-semibold">Notifications</p>
                   <p className="text-xs text-muted-foreground">{notifications.length} items</p>
@@ -236,6 +244,53 @@ export default function Topbar({
           >
             <Settings size={20} className="transition-transform duration-500 group-hover:rotate-180" />
           </button>
+
+          {/* User Profile Dropdown */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setShowProfileDropdown((open) => !open)}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="User profile"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20 text-xs font-bold text-indigo-400">
+                {user?.name?.charAt(0) || "U"}
+              </div>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""}`} />
+            </button>
+
+            {showProfileDropdown && (
+              <div className="absolute right-0 top-12 z-50 w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-card shadow-2xl overflow-hidden p-2 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-sm font-medium text-foreground truncate">{user?.name || "User"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email || ""}</p>
+                  <span className="mt-1 inline-block rounded-lg bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-400 capitalize">
+                    {user?.role?.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    router.push("/dashboard/settings");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-foreground transition hover:bg-muted"
+                >
+                  <Settings size={14} className="text-muted-foreground" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    logout();
+                    router.push("/login");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition hover:bg-red-500/10"
+                >
+                  <LogOut size={14} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

@@ -186,6 +186,7 @@ export default function AddIncomeModal({ onClose, onSave }) {
         buildingId: form.buildingId || null,
         unitId: form.unitId || null,
         deskId: form.deskId || null,
+        shift: selectedUnit?.shift || "24/7",
       };
 
       // ✅ Rent Payment - Update unit and add to revenue

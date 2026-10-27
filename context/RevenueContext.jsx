@@ -24,14 +24,14 @@ export function RevenueProvider({ children }) {
     loadRevenue();
   }, []);
 
-  const loadRevenue = async () => {
+  const loadRevenue = async (params = {}) => {
     try {
       setLoading(true);
-      const response = await revenueAPI.get();
+      const response = await revenueAPI.get(params);
       setRevenueData(response.data.data || response.data);
       
       // ✅ Load transactions after revenue
-      await loadTransactions();
+      await loadTransactions(params);
       setError(null);
     } catch (error) {
       console.error("❌ Failed to load revenue:", error);
@@ -42,9 +42,9 @@ export function RevenueProvider({ children }) {
   };
 
   // ✅ Load transactions separately
-  const loadTransactions = async () => {
+  const loadTransactions = async (params = {}) => {
     try {
-      const response = await revenueAPI.getTransactions();
+      const response = await revenueAPI.getTransactions(params);
       setTransactions(response.data.data || []);
     } catch (error) {
       console.error("❌ Failed to load transactions:", error);
@@ -123,6 +123,19 @@ export function RevenueProvider({ children }) {
     }
   };
 
+  // ✅ Delete transaction
+  const deleteTransaction = async (transactionId) => {
+    try {
+      const response = await revenueAPI.deleteTransaction(transactionId);
+      setRevenueData(response.data.data || response.data);
+      await loadTransactions();
+      return response.data;
+    } catch (error) {
+      console.error("❌ Failed to delete transaction:", error);
+      throw error;
+    }
+  };
+
   // ✅ Get transactions (sync - returns state)
   const getTransactions = useCallback(() => {
     return transactions;
@@ -182,6 +195,7 @@ export function RevenueProvider({ children }) {
       addExpense,
       addSecurity,
       settleSecurity, // ✅ Added settleSecurity to context
+      deleteTransaction,
       getTransactions,
       getRevenueStats,
       resetRevenue,

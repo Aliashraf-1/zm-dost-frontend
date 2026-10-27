@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import ModalPortal from "@/components/common/ModalPortal";
 import { getImageUrl } from "@/lib/imageHelper";
+import ImageLightboxModal from "./ImageLightboxModal";
 
 // ✅ Property Type icons
 const PROPERTY_TYPE_ICONS = {
@@ -70,6 +71,7 @@ export default function PropertyDetailModal({
   onDelete,
 }) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -135,7 +137,11 @@ export default function PropertyDetailModal({
             {/* Photo Gallery */}
             {photos.length > 0 ? (
               <div className="space-y-3">
-                <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+                <div
+                  className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted cursor-pointer group"
+                  onClick={() => setIsLightboxOpen(true)}
+                  title="Click to view full screen"
+                >
                   <Image
                     src={getImageUrl(photos[activePhotoIndex])}
                     alt={`Photo ${activePhotoIndex + 1}`}
@@ -147,19 +153,21 @@ export default function PropertyDetailModal({
                   {photos.length > 1 && (
                     <>
                       <button
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setActivePhotoIndex(
                             (activePhotoIndex - 1 + photos.length) % photos.length
-                          )
-                        }
+                          );
+                        }}
                         className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/70 p-2 text-white transition hover:bg-black/90"
                       >
                         <ChevronLeft size={20} />
                       </button>
                       <button
-                        onClick={() =>
-                          setActivePhotoIndex((activePhotoIndex + 1) % photos.length)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePhotoIndex((activePhotoIndex + 1) % photos.length);
+                        }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/70 p-2 text-white transition hover:bg-black/90"
                       >
                         <ChevronRight size={20} />
@@ -351,6 +359,17 @@ export default function PropertyDetailModal({
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Lightbox */}
+      {photos.length > 0 && (
+        <ImageLightboxModal
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          photos={photos}
+          initialIndex={activePhotoIndex}
+          title={`${typeLabel} • ${property.society || ""}, ${property.city || ""}`}
+        />
+      )}
     </ModalPortal>
   );
 }

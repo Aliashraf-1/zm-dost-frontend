@@ -19,6 +19,7 @@ import {
   FileText,
   Printer,
   X,
+  Trash2,
 } from "lucide-react";
 
 function transactionTone(type) {
@@ -83,6 +84,7 @@ export default function RevenuePage() {
     getTransactions, 
     addIncome, 
     addExpense, 
+    deleteTransaction,
     loadRevenue,
     loading: revenueLoading 
   } = useRevenue();
@@ -96,17 +98,53 @@ export default function RevenuePage() {
   const [showExpensesModal, setShowExpensesModal] = useState(false);
   const [showSecuritiesModal, setShowSecuritiesModal] = useState(false);
   const [showProfitLossModal, setShowProfitLossModal] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState("");
+  const [selectedShift, setSelectedShift] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // ✅ Page load par revenue data fetch karo
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
+  // ✅ Page load & filter change par revenue data fetch karo
   useEffect(() => {
-    loadRevenue();
-  }, []);
+    loadRevenue({
+      buildingId: selectedBuilding || undefined,
+      shift: (!selectedBuilding && selectedShift) ? selectedShift : undefined,
+    });
+  }, [selectedBuilding, selectedShift]);
+
+  const handleDeleteTransaction = async (e, tx) => {
+    e.stopPropagation();
+    const txId = tx.id || tx._id;
+    if (!txId) return;
+    if (window.confirm("Are you sure you want to delete this transaction? This action cannot be undone.")) {
+      try {
+        await deleteTransaction(txId);
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to delete transaction");
+      }
+    }
+  };
 
   const transactions = getTransactions();
   const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
+    // Building filter
+    if (selectedBuilding) {
+      const bId = transaction.buildingId;
+      if (!bId || String(bId) !== String(selectedBuilding)) {
+        return false;
+      }
+    }
+
+    // Shift filter (when no building selected)
+    if (!selectedBuilding && selectedShift) {
+      const shift = transaction.shift || "24/7";
+      if (String(shift).toLowerCase() !== String(selectedShift).toLowerCase()) {
+        return false;
+      }
+    }
+
     const date = transaction.date ? new Date(transaction.date) : null;
     if (!date || Number.isNaN(date.getTime())) return !selectedMonth && !startDate && !endDate;
     const dateKey = date.toISOString().slice(0, 10);
@@ -114,7 +152,7 @@ export default function RevenuePage() {
     if (startDate && dateKey < startDate) return false;
     if (endDate && dateKey > endDate) return false;
     return true;
-  }), [transactions, selectedMonth, startDate, endDate]);
+  }), [transactions, selectedBuilding, selectedShift, selectedMonth, startDate, endDate]);
 
   const stats = useMemo(() => {
     const income = filteredTransactions
@@ -278,7 +316,42 @@ export default function RevenuePage() {
           </button>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 lg:flex-row lg:items-end">
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 lg:flex-row lg:items-end flex-wrap">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Building</label>
+            <select
+              value={selectedBuilding}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedBuilding(val);
+                if (val) setSelectedShift("");
+              }}
+              className="rounded-xl border border-border bg-input px-3 py-2.5 text-sm text-card-foreground outline-none focus:border-indigo-500"
+            >
+              <option value="">All Buildings</option>
+              {(buildings || []).map((b) => (
+                <option key={b._id || b.id} value={b._id || b.id}>
+                  {b.buildingNo || b.name} {b.reference ? `- ${b.reference}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {!selectedBuilding && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Shift</label>
+              <select
+                value={selectedShift}
+                onChange={(e) => setSelectedShift(e.target.value)}
+                className="rounded-xl border border-border bg-input px-3 py-2.5 text-sm text-card-foreground outline-none focus:border-indigo-500"
+              >
+                <option value="">All Shifts</option>
+                <option value="Day">Day</option>
+                <option value="Night">Night</option>
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Month</label>
             <input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="rounded-xl border border-border bg-input px-3 py-2.5 text-sm outline-none focus:border-indigo-500" />
@@ -291,7 +364,20 @@ export default function RevenuePage() {
             <label className="mb-1 block text-xs font-medium text-muted-foreground">To</label>
             <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="rounded-xl border border-border bg-input px-3 py-2.5 text-sm outline-none focus:border-indigo-500" />
           </div>
-          {(selectedMonth || startDate || endDate) && <button onClick={() => { setSelectedMonth(""); setStartDate(""); setEndDate(""); }} className="rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted">Clear period</button>}
+          {(selectedBuilding || selectedShift || selectedMonth || startDate || endDate) && (
+            <button
+              onClick={() => {
+                setSelectedBuilding("");
+                setSelectedShift("");
+                setSelectedMonth("");
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+            >
+              Reset filters
+            </button>
+          )}
           <p className="text-xs text-muted-foreground lg:ml-auto">{filteredTransactions.length} of {transactions.length} transactions shown</p>
         </div>
 
@@ -463,18 +549,29 @@ export default function RevenuePage() {
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-bold ${
-                      transactionTone(tx.type) === "in"
-                        ? "text-emerald-400"
-                        : transactionTone(tx.type) === "out"
-                        ? "text-red-400"
-                        : "text-amber-400"
-                    }`}>
-                      {transactionTone(tx.type) === "out" ? "-" : "+"} Rs. {tx.amount.toLocaleString()}
-                    </p>
-                    {tx.category && (
-                      <p className="text-xs text-muted-foreground">{tx.category}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${
+                        transactionTone(tx.type) === "in"
+                          ? "text-emerald-400"
+                          : transactionTone(tx.type) === "out"
+                          ? "text-red-400"
+                          : "text-amber-400"
+                      }`}>
+                        {transactionTone(tx.type) === "out" ? "-" : "+"} Rs. {tx.amount.toLocaleString()}
+                      </p>
+                      {tx.category && (
+                        <p className="text-xs text-muted-foreground">{tx.category}</p>
+                      )}
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => handleDeleteTransaction(e, tx)}
+                        className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition"
+                        title="Delete Transaction"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -496,6 +593,8 @@ export default function RevenuePage() {
           isOpen={showTransactionsModal}
           onClose={() => setShowTransactionsModal(false)}
           transactions={filteredTransactions}
+          isAdmin={isAdmin}
+          onDelete={handleDeleteTransaction}
         />
       )}
       <DetailModal

@@ -226,7 +226,14 @@ export default function RoomTable({
 
                     {/* Purpose */}
                     <td className="px-6 py-4">
-                      <span className="text-sm text-muted-foreground">{room.purpose || "—"}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm text-muted-foreground">{room.purpose || "—"}</span>
+                        {room.shift && (
+                          <span className="rounded bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 text-[10px] font-semibold">
+                            {room.shift}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Rent */}

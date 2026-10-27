@@ -53,8 +53,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
       <aside
         className={`fixed left-0 top-0 z-50 h-screen border-r border-border bg-background transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           sidebarOpen
-            ? "w-64 translate-x-0"
-            : "w-20 -translate-x-full lg:translate-x-0"
+            ? "w-64 max-w-[85vw] translate-x-0 shadow-2xl lg:shadow-none"
+            : "w-64 max-w-[85vw] -translate-x-full lg:w-20 lg:translate-x-0"
         }`}
       >
         {/* Logo */}

@@ -18,7 +18,13 @@ import { RealEstateRevenueProvider } from "@/context/RealEstateRevenueContext";
 export default function DashboardLayout({ children }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setSidebarOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -51,14 +57,14 @@ export default function DashboardLayout({ children }) {
                 <RealEstatePropertyProvider>
                   <RealEstateRequirementProvider>
                     <RealEstateRevenueProvider>
-                      <div className="min-h-screen bg-background text-foreground">
+                      <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
                         <Sidebar
                           sidebarOpen={sidebarOpen}
                           setSidebarOpen={setSidebarOpen}
                         />
 
                         <div
-                          className={`min-h-screen transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                          className={`min-h-screen w-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                             sidebarOpen ? "lg:pl-64" : "lg:pl-20"
                           }`}
                         >

@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import ImageLightboxModal from "./ImageLightboxModal";
 import {
   Home,
   MapPin,
@@ -63,6 +65,7 @@ export default function PropertyCard({
   onClose,
   onDelete,
 }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const firstPhoto = property.photos?.[0];
   const TypeIcon = PROPERTY_TYPE_ICONS[property.propertyType] || Package;
   const typeLabel = PROPERTY_TYPE_LABELS[property.propertyType] || "Property";
@@ -88,7 +91,17 @@ export default function PropertyCard({
   return (
     <div className="group overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/40 hover:shadow-xl hover:shadow-black/20">
       {/* Image Section */}
-      <div className="relative h-48 w-full overflow-hidden bg-muted">
+      <div
+        className={`relative h-48 w-full overflow-hidden bg-muted ${
+          firstPhoto ? "cursor-pointer" : ""
+        }`}
+        onClick={(e) => {
+          if (firstPhoto) {
+            e.stopPropagation();
+            setLightboxOpen(true);
+          }
+        }}
+      >
         {firstPhoto ? (
           <Image
             src={getImageUrl(firstPhoto)}
@@ -224,6 +237,17 @@ export default function PropertyCard({
           </div>
         )}
       </div>
+
+      {/* Fullscreen Lightbox Modal */}
+      {firstPhoto && (
+        <ImageLightboxModal
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          photos={property.photos || []}
+          initialIndex={0}
+          title={`${typeLabel} • ${property.society || ""}, ${property.city || ""}`}
+        />
+      )}
     </div>
   );
 }

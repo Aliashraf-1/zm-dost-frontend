@@ -133,7 +133,11 @@ export default function QuickExpenseModal({ onClose, onSave }) {
   // Get selected building
   const selectedBuilding = useMemo(() => {
     if (!form.buildingId) return null;
-    return buildings.find(b => b.id === Number(form.buildingId));
+    return buildings.find(
+      (b) => String(b._id) === String(form.buildingId) || 
+             String(b.id) === String(form.buildingId) || 
+             b.id === Number(form.buildingId)
+    );
   }, [form.buildingId, buildings]);
 
   // Get units of selected building
@@ -208,6 +212,8 @@ export default function QuickExpenseModal({ onClose, onSave }) {
         description: form.description || form.category,
         amount: Number(form.amount),
         paidTo: form.paidTo || "N/A",
+        buildingId: form.buildingId || null,
+        unitId: form.unitId || null,
         status: "Paid",
         createdAt: new Date().toISOString(),
       };
@@ -308,6 +314,29 @@ export default function QuickExpenseModal({ onClose, onSave }) {
                 />
               </div>
             )}
+
+            {/* Building Selection */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-card-foreground">
+                Building <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
+              </label>
+              <div className="relative">
+                <Building2 size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <select
+                  name="buildingId"
+                  value={form.buildingId}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-border bg-input py-3 pl-11 pr-4 text-sm text-card-foreground outline-none focus:border-indigo-500 appearance-none"
+                >
+                  <option value="">Select Building (All / Overall)</option>
+                  {buildings.map((b) => (
+                    <option key={b._id || b.id} value={b._id || b.id}>
+                      {b.buildingNo || b.name} {b.reference ? `- ${b.reference}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             {/* Employee Selection (for Salary) */}
             {form.type === "Salary" && (

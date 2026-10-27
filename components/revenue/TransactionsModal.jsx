@@ -1,12 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { X, ArrowUpRight, ArrowDownRight, Wallet, Search, Calendar, Filter } from "lucide-react";
+import { X, ArrowUpRight, ArrowDownRight, Wallet, Search, Calendar, Filter, Trash2 } from "lucide-react";
 import ModalPortal from "@/components/common/ModalPortal";
+import { useAuth } from "@/context/AuthContext";
+import { useRevenue } from "@/context/RevenueContext";
 
-export default function TransactionsModal({ isOpen, onClose, transactions }) {
+export default function TransactionsModal({ isOpen, onClose, transactions, isAdmin: propIsAdmin, onDelete }) {
+  const { user } = useAuth();
+  const { deleteTransaction } = useRevenue();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
+
+  const isAdmin = propIsAdmin ?? (user?.role === "admin" || user?.role === "super_admin");
+
+  const handleDelete = async (e, tx) => {
+    e.stopPropagation();
+    if (onDelete) {
+      await onDelete(e, tx);
+      return;
+    }
+    const txId = tx.id || tx._id;
+    if (!txId) return;
+    if (window.confirm("Are you sure you want to delete this transaction? This action cannot be undone.")) {
+      try {
+        await deleteTransaction(txId);
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to delete transaction");
+      }
+    }
+  };
 
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch =
@@ -145,18 +168,29 @@ export default function TransactionsModal({ isOpen, onClose, transactions }) {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className={`text-sm font-bold ${
-                        tx.type === "Income" || tx.type === "Security Forfeited"
-                          ? "text-emerald-400"
-                          : tx.type === "Expense" || tx.type === "Security Returned"
-                          ? "text-red-400"
-                          : "text-amber-400"
-                      }`}>
-                        {tx.type === "Expense" || tx.type === "Security Returned" ? "-" : "+"} Rs. {tx.amount?.toLocaleString() || 0}
-                      </p>
-                      {tx.status && (
-                        <p className="text-xs text-muted-foreground">{tx.status}</p>
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${
+                          tx.type === "Income" || tx.type === "Security Forfeited"
+                            ? "text-emerald-400"
+                            : tx.type === "Expense" || tx.type === "Security Returned"
+                            ? "text-red-400"
+                            : "text-amber-400"
+                        }`}>
+                          {tx.type === "Expense" || tx.type === "Security Returned" ? "-" : "+"} Rs. {tx.amount?.toLocaleString() || 0}
+                        </p>
+                        {tx.status && (
+                          <p className="text-xs text-muted-foreground">{tx.status}</p>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => handleDelete(e, tx)}
+                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-red-500/10 hover:text-red-400"
+                          title="Delete Transaction"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       )}
                     </div>
                   </div>

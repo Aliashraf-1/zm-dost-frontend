@@ -49,6 +49,7 @@ export default function UnitForm({
     unitNo: baseUnitNo,
     deskNo: existingDeskNo,
     type: initialData?.type || "Room",
+    shift: initialData?.shift || "24/7",
     reference: initialData?.reference || "",
     monthlyRent: initialData?.monthlyRent ?? 999,
     purpose: initialData?.purpose || "Room",
@@ -269,6 +270,7 @@ const handleSubmit = async (e) => {
     unitNo: finalUnitNo,
     deskNo: form.purpose === "Desk" ? form.deskNo.trim() : null,
     type: form.type,
+    shift: form.shift || "24/7",
     reference: form.reference,
     monthlyRent: Number(form.monthlyRent) || 0,
     purpose: form.purpose,
@@ -534,6 +536,23 @@ const handleSubmit = async (e) => {
                 <option value="Office">Office</option>
                 <option value="Shop">Shop</option>
                 <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Shift */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-card-foreground">
+                Shift
+              </label>
+              <select
+                name="shift"
+                value={form.shift || "24/7"}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-card-foreground outline-none focus:border-indigo-500"
+              >
+                <option value="24/7">24/7</option>
+                <option value="Day">Day</option>
+                <option value="Night">Night</option>
               </select>
             </div>
 
