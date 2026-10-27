@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useRevenue } from "@/context/RevenueContext";
+import { useBuildings } from "@/context/BuildingContext";
 import { useAuth } from "@/context/AuthContext";
+import { reportsAPI } from "@/lib/api";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ReportFilters from "@/components/reports/ReportFilters";
 import ExportButton from "@/components/reports/ExportButton";
@@ -19,6 +21,7 @@ import {
 
 export default function ProfitLossReport() {
   const { revenueData, getRevenueStats } = useRevenue();
+  const { buildings = [] } = useBuildings() || {};
   const { user } = useAuth();
   const printRef = useRef(null);
 
@@ -29,8 +32,37 @@ export default function ProfitLossReport() {
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [buildingId, setBuildingId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("buildingId") || "";
+    }
+    return "";
+  });
+  const [shift, setShift] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("shift") || "";
+    }
+    return "";
+  });
 
-  // Filter data by date range
+  const shiftMap = useMemo(() => {
+    const map = {};
+    (buildings || []).forEach((b) => {
+      (b.rooms || []).forEach((r) => {
+        if (r._id || r.id) {
+          map[String(r._id || r.id)] = r.shift || "24/7";
+        }
+      });
+    });
+    return map;
+  }, [buildings]);
+
+  const selectedBuilding = buildings.find(
+    (b) => String(b._id || b.id) === String(buildingId)
+  );
+  const buildingLabel = selectedBuilding?.name || (buildingId ? `Building ${selectedBuilding?.buildingNo || buildingId}` : "All Buildings");
+
+  // Filter data by date range, building, and shift
   const filteredData = useMemo(() => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -47,20 +79,51 @@ export default function ProfitLossReport() {
       return text.includes('security refund') || text.includes('security returned');
     };
 
+    const matchesBuilding = (item) => {
+      if (!buildingId) return true;
+      return String(item?.buildingId) === String(buildingId);
+    };
+
+    const matchesShift = (item) => {
+      if (!shift) return true;
+      const itemShift = item?.shift || (item?.unitId && shiftMap[String(item.unitId)]) || "24/7";
+      return String(itemShift).toLowerCase() === String(shift).toLowerCase();
+    };
+
     const filteredIncome = (revenueData.income || []).filter(
-      (i) => new Date(i.createdAt) >= start && new Date(i.createdAt) <= end && !isSecurityDeposit(i)
+      (i) =>
+        new Date(i.createdAt) >= start &&
+        new Date(i.createdAt) <= end &&
+        !isSecurityDeposit(i) &&
+        matchesBuilding(i) &&
+        matchesShift(i)
     );
     
     const filteredExpenses = (revenueData.expenses || []).filter(
-      (e) => new Date(e.createdAt) >= start && new Date(e.createdAt) <= end && !isSecurityRefund(e)
+      (e) =>
+        new Date(e.createdAt) >= start &&
+        new Date(e.createdAt) <= end &&
+        !isSecurityRefund(e) &&
+        matchesBuilding(e) &&
+        matchesShift(e)
     );
 
     const filteredSecurities = (revenueData.securities || [])
       .filter((s) => s.status === "Held")
-      .filter((s) => new Date(s.createdAt) >= start && new Date(s.createdAt) <= end);
+      .filter(
+        (s) =>
+          new Date(s.createdAt) >= start &&
+          new Date(s.createdAt) <= end &&
+          matchesBuilding(s) &&
+          matchesShift(s)
+      );
 
     const securityMovements = (revenueData.securities || []).filter(
-      (s) => new Date(s.createdAt) >= start && new Date(s.createdAt) <= end
+      (s) =>
+        new Date(s.createdAt) >= start &&
+        new Date(s.createdAt) <= end &&
+        matchesBuilding(s) &&
+        matchesShift(s)
     );
 
     const totalIncome = filteredIncome.reduce((sum, i) => sum + i.amount, 0);
@@ -80,7 +143,7 @@ export default function ProfitLossReport() {
       profitMargin: totalIncome > 0 ? (profit / totalIncome) * 100 : 0,
       totalRevenue: totalIncome + (revenueData.includeSecurities ? totalSecurities : 0),
     };
-  }, [revenueData, startDate, endDate]);
+  }, [revenueData, startDate, endDate, buildingId, shift, shiftMap]);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=900,height=700');
@@ -155,7 +218,19 @@ export default function ProfitLossReport() {
           setStartDate={setStartDate}
           endDate={endDate}
           setEndDate={setEndDate}
-          onApply={() => {}}
+          buildingId={buildingId}
+          setBuildingId={setBuildingId}
+          shift={shift}
+          setShift={setShift}
+          onApply={() => {
+            reportsAPI.getProfitLoss({
+              period,
+              startDate,
+              endDate,
+              buildingId: buildingId || undefined,
+              shift: shift || undefined,
+            }).catch(() => {});
+          }}
         />
 
         {/* Report Content */}
@@ -165,6 +240,9 @@ export default function ProfitLossReport() {
             <h1>Profit & Loss Report</h1>
             <p>
               Period: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+            </p>
+            <p style={{ color: "#475569", fontSize: "14px", margin: "4px 0" }}>
+              Building: {buildingLabel} • Shift: {shift || "All Shifts"}
             </p>
             <p className="securities-note">
               Securities Amount: Rs. {filteredData.totalSecurities.toLocaleString()}

@@ -3,8 +3,10 @@
 import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useEmployees } from "@/context/EmployeeContext";
+import { useBuildings } from "@/context/BuildingContext";
 import { useLeads } from "@/context/LeadContext";
 import { useAuth } from "@/context/AuthContext";
+import { reportsAPI } from "@/lib/api";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ReportFilters from "@/components/reports/ReportFilters";
 import ExportButton from "@/components/reports/ExportButton";
@@ -23,6 +25,7 @@ import {
 
 export default function EmployeeReport() {
   const { employees } = useEmployees();
+  const { buildings = [] } = useBuildings() || {};
   const { getLeadsByEmployee } = useLeads();
   const { user } = useAuth();
   const printRef = useRef(null);
@@ -35,6 +38,23 @@ export default function EmployeeReport() {
     new Date().toISOString().split('T')[0]
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [buildingId, setBuildingId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("buildingId") || "";
+    }
+    return "";
+  });
+  const [shift, setShift] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("shift") || "";
+    }
+    return "";
+  });
+
+  const selectedBuilding = (buildings || []).find(
+    (b) => String(b._id || b.id) === String(buildingId)
+  );
+  const buildingLabel = selectedBuilding?.name || (buildingId ? `Building ${selectedBuilding?.buildingNo || buildingId}` : "All Buildings");
 
   // Calculate employee stats
   const employeeStats = useMemo(() => {
@@ -172,7 +192,20 @@ export default function EmployeeReport() {
             setStartDate={setStartDate}
             endDate={endDate}
             setEndDate={setEndDate}
-            onApply={() => {}}
+            buildingId={buildingId}
+            setBuildingId={setBuildingId}
+            shift={shift}
+            setShift={setShift}
+            onApply={() => {
+              reportsAPI.getEmployeePerformance({
+                period,
+                startDate,
+                endDate,
+                search: searchTerm || undefined,
+                buildingId: buildingId || undefined,
+                shift: shift || undefined,
+              }).catch(() => {});
+            }}
           />
           
           {/* ✅ Search Bar */}
@@ -201,6 +234,9 @@ export default function EmployeeReport() {
           <div className="header">
             <h1>Employee Performance Report</h1>
             <p>Period: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</p>
+            <p style={{ color: "#475569", fontSize: "14px", margin: "4px 0" }}>
+              Building: {buildingLabel} • Shift: {shift || "All Shifts"}
+            </p>
             {searchTerm && (
               <p style={{ color: '#64748b', fontSize: '14px' }}>
                 Search: "{searchTerm}" • {filteredEmployees.length} employees found

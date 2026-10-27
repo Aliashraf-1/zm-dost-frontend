@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useBuildings } from "@/context/BuildingContext";
+import { reportsAPI } from "@/lib/api";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import ReportFilters from "@/components/reports/ReportFilters";
 import {
   FileText,
   TrendingUp,
@@ -19,16 +22,38 @@ import { useState } from "react";
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const { buildings = [] } = useBuildings() || {};
   const router = useRouter();
   const [printing, setPrinting] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const [period, setPeriod] = useState("monthly");
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  );
+  const [endDate, setEndDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+  const [buildingId, setBuildingId] = useState("");
+  const [shift, setShift] = useState("");
+
+  const selectedBuilding = (buildings || []).find(
+    (b) => String(b._id || b.id) === String(buildingId)
+  );
+  const buildingLabel = selectedBuilding?.name || (buildingId ? `Building ${selectedBuilding?.buildingNo || buildingId}` : "All Buildings");
+
+  const queryParams = new URLSearchParams({
+    period,
+    ...(buildingId ? { buildingId } : {}),
+    ...(shift ? { shift } : {}),
+  }).toString();
 
   const reportCards = [
     {
       title: "Profit & Loss Report",
       description: "Detailed profit and loss statement with securities breakdown",
       icon: TrendingUp,
-      href: "/dashboard/reports/profit-loss",
+      href: `/dashboard/reports/profit-loss${queryParams ? `?${queryParams}` : ''}`,
       color: "text-emerald-400",
       bgColor: "bg-emerald-500/10",
     },
@@ -36,7 +61,7 @@ export default function ReportsPage() {
       title: "General Business Report",
       description: "Overview of buildings, rooms, employees, and finance",
       icon: Building2,
-      href: "/dashboard/reports/general",
+      href: `/dashboard/reports/general${queryParams ? `?${queryParams}` : ''}`,
       color: "text-indigo-400",
       bgColor: "bg-indigo-500/10",
     },
@@ -44,40 +69,29 @@ export default function ReportsPage() {
       title: "Employee Performance Report",
       description: "Attendance, tasks, deductions, and efficiency metrics",
       icon: Users,
-      href: "/dashboard/reports/employees",
+      href: `/dashboard/reports/employees${queryParams ? `?${queryParams}` : ''}`,
       color: "text-blue-400",
       bgColor: "bg-blue-500/10",
     },
   ];
 
-  // ✅ Print Current Report (the page user is viewing)
-  const handlePrintCurrent = () => {
-    setPrinting(true);
-    try {
-      // Check if there's a print function in the current page
-      // We'll use window.print() which will print the current page
-      window.print();
-    } catch (error) {
-      console.error("Print failed:", error);
-    } finally {
-      setTimeout(() => setPrinting(false), 2000);
-    }
-  };
-
   // ✅ Export All Reports (Generate combined report)
   const handleExportAll = async () => {
     setExporting(true);
     try {
-      // Fetch all report data
-      const response = await fetch('/api/reports/export-all', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      let exportData = null;
+      try {
+        const response = await reportsAPI.exportAll({
+          period,
+          buildingId: buildingId || undefined,
+          shift: shift || undefined,
+        });
+        exportData = response?.data?.data;
+      } catch (err) {
+        console.warn("Backend exportAll endpoint error, generating fallback combined report:", err);
+      }
 
-      // For now, since backend is not ready, we'll generate a combined HTML report
-      const allReports = await generateCombinedReport();
+      const allReports = generateCombinedReport(exportData);
       
       // Open in new window for print/PDF
       const printWindow = window.open('', '_blank', 'width=1200,height=800');
@@ -96,9 +110,16 @@ export default function ReportsPage() {
     }
   };
 
-  // ✅ Generate combined report (fallback when backend is not ready)
-  const generateCombinedReport = async () => {
-    // This will be replaced with actual API call later
+  // ✅ Generate combined report (HTML template)
+  const generateCombinedReport = (data) => {
+    const pl = data?.profitLoss || {};
+    const gen = data?.general || {};
+    const emp = data?.employee || {};
+
+    const totalIncome = pl.totalIncome || 0;
+    const totalExpenses = pl.totalExpenses || 0;
+    const netProfit = totalIncome - totalExpenses;
+
     return `
       <html>
         <head>
@@ -120,9 +141,6 @@ export default function ReportsPage() {
             .profit { color: #10b981; }
             .loss { color: #ef4444; }
             .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-            .badge-high { background: #d1fae5; color: #065f46; }
-            .badge-medium { background: #fef3c7; color: #92400e; }
-            .badge-low { background: #fee2e2; color: #991b1b; }
             @media print { body { padding: 20px; } }
           </style>
         </head>
@@ -130,7 +148,9 @@ export default function ReportsPage() {
           <div class="header">
             <h1>Combined Business Report</h1>
             <p>Generated: ${new Date().toLocaleString()}</p>
-            <p>All Reports Combined</p>
+            <p style="font-weight: 600; color: #1e293b;">
+              Building: ${buildingLabel} • Shift: ${shift || "All Shifts"} • Period: ${period.toUpperCase()}
+            </p>
           </div>
 
           <!-- General Business Summary -->
@@ -138,15 +158,15 @@ export default function ReportsPage() {
             <h2>General Business Summary</h2>
             <div class="grid-3">
               <div class="stat-card">
-                <div class="value">12</div>
+                <div class="value">${gen.buildings ?? buildings.length}</div>
                 <div class="label">Total Buildings</div>
               </div>
               <div class="stat-card">
-                <div class="value">48</div>
-                <div class="label">Total Units</div>
+                <div class="value">${gen.customers ?? 0}</div>
+                <div class="label">Total Customers</div>
               </div>
               <div class="stat-card">
-                <div class="value">24</div>
+                <div class="value">${emp.total ?? 0}</div>
                 <div class="label">Total Employees</div>
               </div>
             </div>
@@ -157,15 +177,17 @@ export default function ReportsPage() {
             <h2>Financial Summary</h2>
             <div class="grid-3">
               <div class="stat-card">
-                <div class="value profit">Rs. 86,000</div>
+                <div class="value profit">Rs. ${totalIncome.toLocaleString()}</div>
                 <div class="label">Total Income</div>
               </div>
               <div class="stat-card">
-                <div class="value loss">Rs. 183,000</div>
+                <div class="value loss">Rs. ${totalExpenses.toLocaleString()}</div>
                 <div class="label">Total Expenses</div>
               </div>
               <div class="stat-card">
-                <div class="value loss">- Rs. 97,000</div>
+                <div class="value" style="color: ${netProfit >= 0 ? '#10b981' : '#ef4444'}">
+                  ${netProfit >= 0 ? '+' : '-'} Rs. ${Math.abs(netProfit).toLocaleString()}
+                </div>
                 <div class="label">Net Profit / Loss</div>
               </div>
             </div>
@@ -176,11 +198,11 @@ export default function ReportsPage() {
             <h2>Employee Performance Summary</h2>
             <div class="grid-2">
               <div class="stat-card">
-                <div class="value">5</div>
+                <div class="value">${emp.total ?? 0}</div>
                 <div class="label">Total Employees</div>
               </div>
               <div class="stat-card">
-                <div class="value">4</div>
+                <div class="value">${emp.active ?? 0}</div>
                 <div class="label">Active Employees</div>
               </div>
             </div>
@@ -195,22 +217,37 @@ export default function ReportsPage() {
   };
 
   return (
-<ProtectedRoute requiredRoles={["admin", "moderator", "super_admin"]}>
-          <div className="mx-auto max-w-[1600px] space-y-6">
+    <ProtectedRoute requiredRoles={["admin", "moderator", "super_admin"]}>
+      <div className="mx-auto max-w-[1600px] space-y-6">
         {/* Header */}
         <div>
           <p className="text-sm font-medium text-indigo-400">Analytics</p>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Reports & Analytics</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Generate comprehensive reports for your business.
+            Generate comprehensive reports for your business with building and shift filters.
           </p>
         </div>
+
+        {/* Global Filters on Main Page */}
+        <ReportFilters
+          period={period}
+          setPeriod={setPeriod}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+          buildingId={buildingId}
+          setBuildingId={setBuildingId}
+          shift={shift}
+          setShift={setShift}
+          onApply={() => {}}
+        />
 
         {/* Report Cards */}
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {reportCards.map((card) => (
             <Link
-              key={card.href}
+              key={card.title}
               href={card.href}
               className="group rounded-2xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-border hover:shadow-xl hover:shadow-black/20"
             >
@@ -237,9 +274,6 @@ export default function ReportsPage() {
         <div className="rounded-2xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
           <div className="mt-4 flex flex-wrap gap-3">
-         
-           
-
             {/* ✅ Export All Reports */}
             <button
               onClick={handleExportAll}
@@ -259,10 +293,10 @@ export default function ReportsPage() {
               )}
             </button>
 
-            {/* ✅ Success Message (when done) */}
+            {/* ✅ Message */}
             {!printing && !exporting && (
               <span className="text-xs text-muted-foreground self-center">
-                Click Print to print current page, or Export All for combined report
+                Click Export All to generate a combined report filtered by {buildingLabel} ({shift || "All Shifts"}).
               </span>
             )}
           </div>

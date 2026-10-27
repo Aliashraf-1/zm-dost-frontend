@@ -5,6 +5,7 @@ import { useBuildings } from "@/context/BuildingContext";
 import { useEmployees } from "@/context/EmployeeContext";
 import { useRevenue } from "@/context/RevenueContext";
 import { useAuth } from "@/context/AuthContext";
+import { reportsAPI } from "@/lib/api";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ReportFilters from "@/components/reports/ReportFilters";
 import ExportButton from "@/components/reports/ExportButton";
@@ -24,9 +25,9 @@ import {
 } from "lucide-react";
 
 export default function GeneralReport() {
-  const { buildings } = useBuildings();
-  const { employees } = useEmployees();
-  const { revenueData } = useRevenue();
+  const { buildings = [] } = useBuildings() || {};
+  const { employees = [] } = useEmployees() || {};
+  const { revenueData = {} } = useRevenue() || {};
   const { user } = useAuth();
   const printRef = useRef(null);
 
@@ -37,6 +38,35 @@ export default function GeneralReport() {
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [buildingId, setBuildingId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("buildingId") || "";
+    }
+    return "";
+  });
+  const [shift, setShift] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("shift") || "";
+    }
+    return "";
+  });
+
+  const shiftMap = useMemo(() => {
+    const map = {};
+    (buildings || []).forEach((b) => {
+      (b.rooms || []).forEach((r) => {
+        if (r._id || r.id) {
+          map[String(r._id || r.id)] = r.shift || "24/7";
+        }
+      });
+    });
+    return map;
+  }, [buildings]);
+
+  const selectedBuilding = (buildings || []).find(
+    (b) => String(b._id || b.id) === String(buildingId)
+  );
+  const buildingLabel = selectedBuilding?.name || (buildingId ? `Building ${selectedBuilding?.buildingNo || buildingId}` : "All Buildings");
 
   // Calculate stats for the selected period
   const stats = useMemo(() => {
@@ -44,11 +74,21 @@ export default function GeneralReport() {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
+    const filteredBuildings = buildingId
+      ? (buildings || []).filter(b => String(b._id || b.id) === String(buildingId))
+      : (buildings || []);
+
+    const matchesShift = (r) => {
+      if (!shift) return true;
+      const rShift = r?.shift || shiftMap[String(r._id || r.id)] || "24/7";
+      return String(rShift).toLowerCase() === String(shift).toLowerCase();
+    };
+
     // Buildings added/removed in period
-    const buildingsAdded = buildings.filter(
+    const buildingsAdded = filteredBuildings.filter(
       b => new Date(b.createdAt) >= start && new Date(b.createdAt) <= end
     ).length;
-    const buildingsRemoved = buildings.filter(
+    const buildingsRemoved = filteredBuildings.filter(
       b => b.status === "Inactive" && new Date(b.updatedAt) >= start && new Date(b.updatedAt) <= end
     ).length;
 
@@ -56,8 +96,8 @@ export default function GeneralReport() {
     let unitsAdded = 0;
     let unitsRented = 0;
     let unitsAvailable = 0;
-    buildings.forEach(b => {
-      (b.rooms || []).forEach(r => {
+    filteredBuildings.forEach(b => {
+      (b.rooms || []).filter(matchesShift).forEach(r => {
         if (new Date(r.createdAt) >= start && new Date(r.createdAt) <= end) {
           unitsAdded++;
         }
@@ -71,33 +111,43 @@ export default function GeneralReport() {
     });
 
     // Employees added/removed in period
-    const employeesAdded = employees.filter(
+    const employeesAdded = (employees || []).filter(
       e => new Date(e.createdAt) >= start && new Date(e.createdAt) <= end
     ).length;
-    const employeesRemoved = employees.filter(
+    const employeesRemoved = (employees || []).filter(
       e => e.status === "Inactive" && new Date(e.updatedAt) >= start && new Date(e.updatedAt) <= end
     ).length;
 
     // Major expenses in period
-    const periodExpenses = (revenueData.expenses || []).filter(
-      e => new Date(e.createdAt) >= start && new Date(e.createdAt) <= end
-    );
+    const periodExpenses = (revenueData.expenses || []).filter(e => {
+      const eDate = new Date(e.createdAt);
+      if (eDate < start || eDate > end) return false;
+      if (buildingId && String(e.buildingId) !== String(buildingId)) return false;
+      if (shift) {
+        const eShift = e.shift || (e.unitId && shiftMap[String(e.unitId)]) || "24/7";
+        if (String(eShift).toLowerCase() !== String(shift).toLowerCase()) return false;
+      }
+      return true;
+    });
     const totalExpenses = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
     const majorExpenses = periodExpenses
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
 
     // Totals
-    const totalBuildings = buildings.length;
-    const activeBuildings = buildings.filter(b => b.status === "Active").length;
-    const totalRooms = buildings.reduce((sum, b) => sum + (b.rooms?.length || 0), 0);
-    const rentedRooms = buildings.reduce(
-      (sum, b) => sum + (b.rooms?.filter(r => r.status === "Rented").length || 0),
+    const totalBuildings = filteredBuildings.length;
+    const activeBuildings = filteredBuildings.filter(b => b.status === "Active").length;
+    const totalRooms = filteredBuildings.reduce(
+      (sum, b) => sum + (b.rooms || []).filter(matchesShift).length,
+      0
+    );
+    const rentedRooms = filteredBuildings.reduce(
+      (sum, b) => sum + (b.rooms || []).filter(r => r.status === "Rented" && matchesShift(r)).length,
       0
     );
     const availableRooms = totalRooms - rentedRooms;
-    const totalEmployees = employees.length;
-    const activeEmployees = employees.filter(e => e.status === "Active").length;
+    const totalEmployees = (employees || []).length;
+    const activeEmployees = (employees || []).filter(e => e.status === "Active").length;
 
     return {
       buildings: { added: buildingsAdded, removed: buildingsRemoved, total: totalBuildings, active: activeBuildings },
@@ -105,7 +155,7 @@ export default function GeneralReport() {
       employees: { added: employeesAdded, removed: employeesRemoved, total: totalEmployees, active: activeEmployees },
       expenses: { total: totalExpenses, major: majorExpenses, count: periodExpenses.length },
     };
-  }, [buildings, employees, revenueData, startDate, endDate]);
+  }, [buildings, employees, revenueData, startDate, endDate, buildingId, shift, shiftMap]);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
@@ -180,7 +230,19 @@ export default function GeneralReport() {
           setStartDate={setStartDate}
           endDate={endDate}
           setEndDate={setEndDate}
-          onApply={() => {}}
+          buildingId={buildingId}
+          setBuildingId={setBuildingId}
+          shift={shift}
+          setShift={setShift}
+          onApply={() => {
+            reportsAPI.getGeneral({
+              period,
+              startDate,
+              endDate,
+              buildingId: buildingId || undefined,
+              shift: shift || undefined,
+            }).catch(() => {});
+          }}
         />
 
         {/* Report Content */}
@@ -188,6 +250,9 @@ export default function GeneralReport() {
           <div className="header">
             <h1>General Business Report</h1>
             <p>Period: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</p>
+            <p style={{ color: "#475569", fontSize: "14px", margin: "4px 0" }}>
+              Building: {buildingLabel} • Shift: {shift || "All Shifts"}
+            </p>
           </div>
 
           {/* Buildings Section */}
